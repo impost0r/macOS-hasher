@@ -24,8 +24,12 @@ def scan_directory(directory):
             filepath = os.path.join(root, file)
             file_hash = hash_file(filepath)
             if file_hash is not None:
-                with open('hashes.txt', 'a') as f:
-                    f.write(f"{filepath}: {file_hash}\n")
+                if os.path.exists("hashes.txt"):
+                    with open('hashes-2.txt', 'a') as f:
+                        f.write(f"{filepath}: {file_hash}\n")
+                else:
+                    with open('hashes.txt', 'a') as f:
+                        f.write(f"{filepath}: {file_hash}\n")
 
 # Scan all directories
 for directory in directories:
