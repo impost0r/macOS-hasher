@@ -1,36 +1,56 @@
-import os
+import pathlib
 import hashlib
 
-# List of directories to scan
-directories = [
-    "/System/Library/Kernels", "/System/Library/Extensions", "/System/Library/Frameworks", "Frameworks", "Extensions", "Kernels"
-    # Add the rest of your directories here...
-]
+from typing import List, Optional
 
-def hash_file(filepath):
+
+def get_hash(filepath: pathlib.Path) -> Optional[str]:
     try:
-        # Open the file in binary mode
-        with open(filepath, "rb") as f:
-            bytes = f.read()  # Read the whole file
-            readable_hash = hashlib.sha256(bytes).hexdigest()  # Create a SHA256 hash
-            return readable_hash
+        with filepath.open("rb") as f:
+            fbytes = f.read()
+            readable_hash = hashlib.sha256(fbytes).hexdigest()
     except Exception as e:
-        print(f"Error hashing file {filepath}: {str(e)}")
-        return None
+        print(f"Error hashing file {filepath}:\n\t{e}")
+        readable_hash = None
 
-def scan_directory(directory):
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            filepath = os.path.join(root, file)
-            file_hash = hash_file(filepath)
-            if file_hash is not None:
-                if os.path.exists("hashes.txt"):
-                    with open('hashes-2.txt', 'a') as f:
-                        f.write(f"{filepath}: {file_hash}\n")
-                else:
-                    with open('hashes.txt', 'a') as f:
-                        f.write(f"{filepath}: {file_hash}\n")
+    return readable_hash
 
-# Scan all directories
-for directory in directories:
-    scan_directory(directory)
+
+def scan_directory(directory: str) -> List[str]:
+    file_hashes: List[str] = []
+    dir_obj = pathlib.Path(directory)
+    for path in dir_obj.rglob("*"):
+        if path.is_dir():
+            continue
+
+        file_hash = get_hash(path)
+        if file_hash:
+            file_hashes.append(f"{path}: {file_hash}\n")
+
+    return file_hashes
+
+
+def main() -> None:
+    directories = [
+        "/System/Library/Kernels",
+        "/System/Library/Extensions",
+        "/System/Library/Frameworks",
+        "Frameworks",
+        "Extensions",
+        "Kernels",
+    ]
+    file_contents: List[str] = []
+    for directory in directories:
+        result = scan_directory(directory)
+        file_contents.extend(result)
+
+    hashfile = pathlib.Path("hashes.txt")
+    if hashfile.exists():
+        hashfile = pathlib.Path("hashes-2.txt")
+
+    with hashfile.open("a") as f:
+        f.writelines(file_contents)
+
+
+if __name__ == "__main__":
+    main()
