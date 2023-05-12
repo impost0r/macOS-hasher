@@ -1,7 +1,7 @@
 import pathlib
 import hashlib
 
-from typing import Optional
+from typing import List, Optional
 
 
 def get_hash(filepath: pathlib.Path) -> Optional[str]:
@@ -16,7 +16,8 @@ def get_hash(filepath: pathlib.Path) -> Optional[str]:
     return readable_hash
 
 
-def scan_directory(directory: str) -> None:
+def scan_directory(directory: str) -> List[str]:
+    file_hashes: List[str] = []
     dir_obj = pathlib.Path(directory)
     for path in dir_obj.rglob("*"):
         if path.is_dir():
@@ -24,12 +25,9 @@ def scan_directory(directory: str) -> None:
 
         file_hash = get_hash(path)
         if file_hash:
-            hashfile = pathlib.Path("hashes.txt")
-            if hashfile.exists():
-                hashfile = pathlib.Path("hashes-2.txt")
+            file_hashes.append(f"{path}: {file_hash}\n")
 
-            with hashfile.open("a") as f:
-                f.write(f"{path}: {file_hash}\n")
+    return file_hashes
 
 
 def main() -> None:
@@ -41,8 +39,17 @@ def main() -> None:
         "Extensions",
         "Kernels",
     ]
+    file_contents: List[str] = []
     for directory in directories:
-        scan_directory(directory)
+        result = scan_directory(directory)
+        file_contents.extend(result)
+
+    hashfile = pathlib.Path("hashes.txt")
+    if hashfile.exists():
+        hashfile = pathlib.Path("hashes-2.txt")
+
+    with hashfile.open("a") as f:
+        f.writelines(file_contents)
 
 
 if __name__ == "__main__":
